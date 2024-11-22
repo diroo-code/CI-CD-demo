@@ -20,23 +20,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Step 2: Set up .NET (example for a Blazor/ASP.NET app)
+      # Step 2: Set up .NET (ensure the correct .NET version is used)
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '7.0'
 
-      # Step 3: Install dependencies
+      # Step 3: Restore dependencies
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore ./src/MyProject/MyProject.csproj
 
-      # Step 4: Build the application
+      # Step 4: Build the project
       - name: Build project
-        run: dotnet build --no-restore --configuration Release
+        run: dotnet build ./src/MyProject/MyProject.csproj --no-restore --configuration Release
 
       # Step 5: Run tests
       - name: Run tests
-        run: dotnet test --no-build --verbosity normal
+        run: dotnet test ./tests/MyProject.Tests/MyProject.Tests.csproj --no-build --verbosity normal
 
   deploy:
     name: Deploy to Production
@@ -48,18 +48,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Step 2: Set up deployment credentials (e.g., Azure)
-      - name: Set up Azure Web App
-        uses: azure/webapps-deploy@v2
-        with:
-          app-name: my-app-name       # Replace with your Azure Web App name
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: ${{ github.workspace }}/bin/Release/net7.0/publish
+      # Step 2: Publish the application
+      - name: Publish project
+        run: dotnet publish ./src/MyProject/MyProject.csproj --configuration Release --output ./publish
 
-      # Optional Step: Notify on successful deployment
-      - name: Notify Slack (or any service)
-        if: success()
-        uses: slackapi/slack-github-action@v1.23
-        with:
-          payload: '{"text": "Deployment to Production succeeded!"}'
-          token: ${{ secrets.SLACK_TOKEN }}
+      # Step 3: Deploy to Azure Web App (example)
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v2
