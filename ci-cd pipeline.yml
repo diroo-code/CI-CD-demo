@@ -1,0 +1,65 @@
+name: CI/CD Pipeline
+
+# Triggers: Run pipeline on push or pull request to the main branch
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+# Define jobs
+jobs:
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Set up .NET (example for a Blazor/ASP.NET app)
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '7.0'
+
+      # Step 3: Install dependencies
+      - name: Restore dependencies
+        run: dotnet restore
+
+      # Step 4: Build the application
+      - name: Build project
+        run: dotnet build --no-restore --configuration Release
+
+      # Step 5: Run tests
+      - name: Run tests
+        run: dotnet test --no-build --verbosity normal
+
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build  # Ensure the deploy job only runs after the build job succeeds
+
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Set up deployment credentials (e.g., Azure)
+      - name: Set up Azure Web App
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: my-app-name       # Replace with your Azure Web App name
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ${{ github.workspace }}/bin/Release/net7.0/publish
+
+      # Optional Step: Notify on successful deployment
+      - name: Notify Slack (or any service)
+        if: success()
+        uses: slackapi/slack-github-action@v1.23
+        with:
+          payload: '{"text": "Deployment to Production succeeded!"}'
+          token: ${{ secrets.SLACK_TOKEN }}
